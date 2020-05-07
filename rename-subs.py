@@ -21,10 +21,7 @@ def applyRegex(fileName):
    # 4: la extension del capitulo (avi, mp4, mkv)
    # -------------------------------------------------------------------------------------------------------------  
    matches = re.findall(regex, fileName, re.MULTILINE)
-   #if ("." in file)
-   #print(len(matches[0]))   
-
-   # print("file:{}".format(file))
+   
    flag = False
 
    if (len(matches) > 0):
@@ -41,7 +38,6 @@ def parseFromVideoFile():
    regItm = applyRegex(file)
    titulo = regItm[0].replace("."," ").strip() 
    capitulo = regItm[1]
-   #ext = regItm[3]
    extReplace =  "." + regItm[3]
 
    print("titulo: {}".format(titulo))
@@ -55,12 +51,12 @@ def parseFromVideoFile():
       print("sub original: {}".format(original))
       print("sub nuevo: {}".format(nuevo))
       resp = raw_input("Desea renombrar el archivo de subtitulo s/n:")
-      print("respuesta: {}".format(resp))
       if (resp in "YySs"):
          print("renombrando archivo...")
          pathOrig = os.path.join(curPath, original)
          pathNew = os.path.join(curPath, nuevo)
          os.rename(pathOrig, pathNew)
+         print("proceso finalizado!")
 
    return
 
