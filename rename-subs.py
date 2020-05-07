@@ -1,17 +1,15 @@
-import re, sys, os, glob
+import re, sys, os, glob, ntpath, shutil
 import zipfile
+import patoolib
+import tempfile
 
-curPath = os.path.dirname(os.path.abspath(__file__))
+def path_leaf(path):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
 
-if (len(sys.argv) == 1):
-   print('debe especificar el nombre del archivo')
-   exit()
-
-file =  sys.argv[1]
-ext = os.path.splitext(file)[1]
-regex = r"(.*)([sS][0-9]{2}[eE][0-9]{2}|[0-9]{1,2}[xX][0-9]{1,2})(.*)(mp4|mkv|avi|srt)"
 
 def applyRegex(fileName):
+   regex = r"(.*)([sS][0-9]{2}[eE][0-9]{2}|[0-9]{1,2}[xX][0-9]{1,2})(.*)(mp4|mkv|avi|srt)"   
    # -------------------------------------------------------------------------------------------------------------
    # debe devolver 4 grupos de captura
    # -------------------------------------------------------------------------------------------------------------
@@ -44,7 +42,7 @@ def parseFromVideoFile():
    print("capitulo: {}".format(regItm[1]))
    print("extension: {}".format(regItm[3]))   
 
-   subs = [item.replace(curPath + "/", "") for item in glob.glob(curPath + "/*.srt") if titulo in item and capitulo in item]
+   subs = [path_leaf(item) for item in glob.glob(os.path.join(curPath,  "*.srt")) if titulo in item and capitulo in item]
    if len(subs) > 0:
       original = subs[0]
       nuevo = file.replace(extReplace, ".srt")
@@ -63,13 +61,28 @@ def parseFromVideoFile():
 def parseFromZipRarFile():
    subInZip = ""
    print('el archivo es un {}'.format(ext))
-   try:
-     with zipfile.ZipFile(curPath + "/" + file, 'r') as zip_ref:
-      subInZip = zip_ref.infolist()[0].filename
-      print("subName: {}".format(subInZip))
-      zip_ref.extractall(curPath)
-   except:
-     print('error descomprimiendo el archivo...')   
+   if (ext == ".zip"):
+      try:
+        with zipfile.ZipFile(os.path.join(curPath, file), 'r') as zip_ref:
+          subInZip = zip_ref.infolist()[0].filename
+          print("subName: {}".format(subInZip))
+          zip_ref.extractall(curPath)
+      except:
+        print('error descomprimiendo el archivo...')
+   else:
+      tempDir = os.path.join(tempfile.gettempdir(),  os.path.splitext(path_leaf(file))[0])
+      
+      if not os.path.exists(tempDir):
+         os.makedirs(tempDir)
+      else:
+         shutil.rmtree(tempDir)
+         os.makedirs(tempDir)
+      
+      print("extrayendo contenido del rar a carpeta temporal")
+      patoolib.extract_archive(os.path.join(curPath, file), outdir=tempDir)      
+      subInZip = [path_leaf(item) for item in glob.glob(os.path.join(tempDir,"*.srt"))][0]
+      print("copiando el subtitulo a la carpeta de origen del .rar")
+      shutil.copyfile(os.path.join(tempDir, subInZip), os.path.join(curPath, subInZip))      
 
    if (subInZip == ""):   
      print("error obteniendo el nombre del archivo de subtitulos desde el .zip/rar")
@@ -91,9 +104,9 @@ def parseFromZipRarFile():
    #patron S##E## -> S01E01
    subPattern2 = "s" +   matches[0].rjust(2,"0") + "e" + matches[1]
       
-   videos = [item.replace(curPath + "/", "") for item in glob.glob(curPath + "/*.mkv") if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())]
-   videos.extend([item.replace(curPath + "/", "") for item in glob.glob(curPath + "/*.mp4") if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())])
-   videos.extend([item.replace(curPath + "/", "") for item in glob.glob(curPath + "/*.avi") if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())])   
+   videos = [path_leaf(item) for item in glob.glob(os.path.join(curPath,"*.mkv")) if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())]
+   videos.extend([path_leaf(item) for item in glob.glob(os.path.join(curPath, "*.mp4")) if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())])
+   videos.extend([path_leaf(item) for item in glob.glob(os.path.join(curPath, "*.avi")) if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())])   
    if (len(videos) == 0):
      print("no se encontraron videos para el subtitulo seleccionado!.")
      exit()
@@ -120,6 +133,23 @@ def parseFromZipRarFile():
    return
 
 ### MAIN CODE ###
+if (len(sys.argv) == 1):
+   print('debe especificar el nombre del archivo')
+   exit()
+
+file =  sys.argv[1]
+curPath = os.path.dirname(file)
+ext = os.path.splitext(file)[1]
+
+if (curPath == ""):
+  curPath = os.path.dirname(os.path.abspath(__file__))
+
+print("dirPath: {}".format(curPath))
+
+if (not os.path.exists(os.path.join(curPath, path_leaf(file)))):
+   print("ruta o nombre de archivo invalido!")
+   exit()
+
 if ext in ".zip|.rar":
    parseFromZipRarFile()
 else:
