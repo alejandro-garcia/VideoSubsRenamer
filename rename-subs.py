@@ -42,7 +42,15 @@ def parseFromVideoFile():
    print("capitulo: {}".format(regItm[1]))
    print("extension: {}".format(regItm[3]))   
 
-   subs = [path_leaf(item) for item in glob.glob(os.path.join(curPath,  "*.srt")) if titulo in item and capitulo in item]
+   regexEpisode = r"[sS]{0,1}([0-9]{1,2})[xXEe]{0,1}([0-9]{1,2})"
+   matches = re.findall(regexEpisode, capitulo, re.MULTILINE)[0]   
+   
+   #patron #x## -> 1x01
+   subPattern1 = str(int(matches[0])) + "x" + matches[1] 
+   #patron S##E## -> S01E01
+   subPattern2 = "s" +   matches[0].rjust(2,"0") + "e" + matches[1]
+
+   subs = [path_leaf(item) for item in glob.glob(os.path.join(curPath,  "*.srt")) if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())]
    if len(subs) > 0:
       original = subs[0]
       nuevo = file.replace(extReplace, ".srt")
