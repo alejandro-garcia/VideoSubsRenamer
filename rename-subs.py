@@ -104,9 +104,9 @@ def parseFromZipRarFile():
    #patron S##E## -> S01E01
    subPattern2 = "s" +   matches[0].rjust(2,"0") + "e" + matches[1]
       
-   videos = [path_leaf(item) for item in glob.glob(os.path.join(curPath,"*.mkv")) if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())]
-   videos.extend([path_leaf(item) for item in glob.glob(os.path.join(curPath, "*.mp4")) if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())])
-   videos.extend([path_leaf(item) for item in glob.glob(os.path.join(curPath, "*.avi")) if titulo in item and (subPattern1 in item.lower() or subPattern2 in item.lower())])   
+   videos = [path_leaf(item) for item in glob.glob(os.path.join(curPath,"*.mkv")) if titulo in item.replace(".", " ") and (subPattern1 in item.lower() or subPattern2 in item.lower())]
+   videos.extend([path_leaf(item) for item in glob.glob(os.path.join(curPath, "*.mp4")) if titulo in item.replace(".", " ") and (subPattern1 in item.lower() or subPattern2 in item.lower())])
+   videos.extend([path_leaf(item) for item in glob.glob(os.path.join(curPath, "*.avi")) if titulo in item.replace(".", " ") and (subPattern1 in item.lower() or subPattern2 in item.lower())])   
    if (len(videos) == 0):
      print("no se encontraron videos para el subtitulo seleccionado!.")
      exit()
